@@ -1,0 +1,105 @@
+# ====================================== AIRFLOW ENVIRONMENT VARIABLES =======================================
+x-environment: &airflow_environment
+  - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+  - AIRFLOW__CORE__LOAD_DEFAULT_CONNECTIONS=False
+  - AIRFLOW__CORE__LOAD_EXAMPLES=False
+  - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql://airflow:airflow@postgres:5432/airflow
+  - AIRFLOW__CORE__STORE_DAG_CODE=True
+  - AIRFLOW__CORE__STORE_SERIALIZED_DAGS=True
+  - AIRFLOW__WEBSERVER__EXPOSE_CONFIG=True
+  - AIRFLOW__WEBSERVER__RBAC=False
+  - WEB_HOSTS=http://web:3000
+
+x-airflow-image: &airflow_image apache/airflow:2.5.1
+# ====================================== /AIRFLOW ENVIRONMENT VARIABLES ======================================
+version: "3.0"
+services:
+  web:
+    container_name: web
+    build: .
+    volumes:
+      - ./app:/app/
+      - ./crawler/data_facebook:/data_facebook
+    ports:
+      - "3000:3000"
+    depends_on:
+      - elasticsearch
+    environment:
+      - ELASTICSEARCH_HOSTS=http://es-container:9200
+    networks:
+      - es-net
+  elasticsearch:
+    container_name: es-container
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.5.0
+    environment:
+      - xpack.security.enabled=false
+      - "discovery.type=single-node"
+    networks:
+      - es-net
+    ports:
+      - 9200:9200
+  kibana:
+    container_name: kb-container
+    image: docker.elastic.co/kibana/kibana:8.5.0
+    environment:
+      - ELASTICSEARCH_HOSTS=http://es-container:9200
+    networks:
+      - es-net
+    depends_on:
+      - elasticsearch
+    ports:
+      - 5601:5601
+  # images for airflow
+  postgres:
+    image: postgres:12-alpine
+    environment:
+      - POSTGRES_USER=airflow
+      - POSTGRES_PASSWORD=airflow
+      - POSTGRES_DB=airflow
+    networks:
+      - es-net
+    ports:
+      - "5432:5432"
+  init:
+    image: *airflow_image
+    depends_on:
+      - postgres
+    environment: *airflow_environment
+    entrypoint: /bin/bash
+    command: -c 'airflow db upgrade && sleep 5 && airflow users create --username admin --password truong157359 --firstname truong --lastname quach --role Admin --email qtt153759@gmail.com'
+    networks:
+      - es-net
+  webserver:
+    image: *airflow_image
+    restart: always
+    depends_on:
+      - postgres
+    networks:
+      - es-net
+    ports:
+      - "8080:8080"
+    volumes:
+      - logs:/opt/airflow/logs
+    environment: *airflow_environment
+    command: webserver
+  scheduler:
+    build: ./crawler
+    restart: always
+    depends_on:
+      - postgres
+      - elasticsearch
+    volumes:
+      - ./crawler/dags:/opt/airflow/dags
+      - logs:/opt/airflow/logs
+      - ./crawler/data_facebook:/home/airflow/data_facebook
+
+    environment: *airflow_environment
+    command: scheduler
+    networks:
+      - es-net
+
+volumes:
+  logs:
+networks:
+  es-net:
+    driver: bridge
