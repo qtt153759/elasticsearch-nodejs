@@ -41,10 +41,10 @@ dag = DAG(
 #     dag=dag)
 
 
-test = BashOperator(
-    task_id='test',
-    bash_command='sudo chmod 777 /opt/airflow || exit 0',
-    dag=dag)
+# test = BashOperator(
+#     task_id='test',
+#     bash_command='sudo chmod 777 /opt/airflow || exit 0',
+#     dag=dag)
 # crawler_bulk = PythonOperator(
 #     task_id="crawler_merge",
 #     python_callable=crawler.create_bulk_data,
@@ -60,16 +60,15 @@ test = BashOperator(
 #     task_id="crawler_post",
 #     python_callable=crawler.crawl_post,
 #     dag=dag)
-crawler_bulk = PythonOperator(
-    task_id="crawler_merge",
-    python_callable=crawler.create_bulk_data,
-    dag=dag)
+# crawler_bulk = PythonOperator(
+#     task_id="crawler_merge",
+#     python_callable=crawler.create_bulk_data,
+#     dag=dag)
 index_elasticsearch=PythonOperator(
     task_id="index_elasticsearch",
     python_callable=crawler.indexElasticsearch,
     dag=dag)
-# test >> crawler_url>>crawler_post>>
-test>>crawler_bulk>>index_elasticsearch
+index_elasticsearch
 
 
 
