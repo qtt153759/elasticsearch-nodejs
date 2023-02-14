@@ -7,22 +7,21 @@ from time import sleep
 
 import requests
 from facebook_scraper import get_posts
-
+from crawler_task.preprocessing import preprocess
 groupIds:'list[str]'
-groupIds=['352230071875035','1523459548029885',"224105692857136","1457408924575160","174764463261090","3237453733026579","870665749718859"]
+groupIds=['870665749718859']#,"224105692857136","1457408924575160","174764463261090","3237453733026579","870665749718859"]'1523459548029885'
 
 def getGroupIdbyDay()->'list[str]':
     today = date.today()
-    return [groupIds[today.weekday]]
+    return groupIds
 def getCookies()->str:
-    x=random.uniform(0,1)
-    if (x>0.5):
-        return '/home/airflow/data_facebook/cockies.json'
+    # x=random.uniform(0,1)
+    # if (x>0.5):
+        # return '/home/airflow/data_facebook/cockies.json'
     return '/home/airflow/data_facebook/cockies.json'
 def crawl_url():
     sink_path="/home/airflow/data_facebook/data_url/"
-    today = date.today()
-    today = "2023-02-11"
+    today = str(date.today())
     print("Step 1 Today's date:", today)
     groupIdsByDay=getGroupIdbyDay()
     for groupId in groupIdsByDay:
@@ -50,8 +49,7 @@ def crawl_url():
         sleep(60*random.uniform(1,2))
 
 def crawl_post():
-    today = date.today()
-    today = "2023-02-11"
+    today = str(date.today())
     print("Step 2 Today's date:", today)
     source_path = "/home/airflow/data_facebook/data_url/"+str(today)+"/"
     sink_path="/home/airflow/data_facebook/data_post/"+str(today)+"/"
@@ -61,7 +59,7 @@ def crawl_post():
     print("exist:",isExist)
     groupIdsByDay=getGroupIdbyDay()
     for groupId in groupIdsByDay:
-        with open(source_path+groupId) as fp:
+        with open(source_path+groupId+".json") as fp:
             url_list = json.load(fp)
         print(len(url_list))
         
@@ -72,13 +70,13 @@ def crawl_post():
         chunks = [id_list[x:x+20] for x in range(0, len(id_list), 20)]
         print(chunks)
         for i in range(len(chunks)):
-            with open(sink_path+str(i)+"_"+groupId, 'a+') as f:
+            with open(sink_path+str(i)+"_"+groupId+".json", 'a+') as f:
                 posts = get_posts(post_urls=[facebook_url+str(id) for id in chunks[i]],cookies=getCookies(), options={"comments":True})
                 f.write("[")
                 posts=list(posts)
                 for j in range(len(posts)-1):
-                    posts[j]["comments_full"]="".join(posts[j]["comments_full"])
                     try:
+                        posts[j]["comments_full"]="".join(posts[j]["comments_full"])
                         del posts[j]["original_text"]
                     except KeyError as ex:
                         print("No such key: '%s'" % ex)
@@ -92,8 +90,8 @@ def crawl_post():
                     
 
 def create_bulk_data():
-    today = date.today()
-    today = "2023-02-11"
+    today = str(date.today())
+    today ="2023-02-01"
     # folder path
     source_path = "/home/airflow/data_facebook/data_post/"+today+"/"
     sink_path="/home/airflow/data_facebook/data_final/"
@@ -123,15 +121,23 @@ def create_bulk_data():
                       del data[ignore_type]
                     except KeyError as ex:
                       print("No such key: '%s'" % ex)
-                data["time"]=data["time"].replace(" ","T")
+                # for tokenized_type in ["text",'shared_text',"comments_full"]:
+                #     try:
+                #        data[tokenized_type]=preprocess(data[tokenized_type])
+                #     except KeyError as ex:
+                #       print("No such key: '%s'" % ex)
+                try:
+                    data["time"]=data["time"].replace(" ","T")
+                except KeyError as ex:
+                      print("No such key: '%s'" % ex)
                 # file.write("{\"create\":{\"_id\":"+str(data['post_id'])+"}}")
                 # file.write("\n")
                 json.dump(data, file, ensure_ascii=False, default=str)
                 file.write("\n")
 
 def indexElasticsearch():
-    today = date.today()
-    today ="2023-02-11"
+    today = str(date.today())
+    today ="2023-02-01"
     # folder path
     source_path="/home/airflow/data_facebook/data_final/"+str(today)+".json"
     isExists=os.path.isfile(source_path)

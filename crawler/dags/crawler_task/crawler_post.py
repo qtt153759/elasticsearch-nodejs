@@ -27,9 +27,9 @@ with open("./data_post/"+str(today)+"/870665749718859_"+sys.argv[1]+"_"+sys.argv
   f.write("[")
   posts=list(posts)
   for i in range(len(posts)-1):
-      posts[i]["comments_full"]="".join(posts[i]["comments_full"])
       try:
-          del posts[i]["original_text"]
+        posts[i]["comments_full"]="".join(posts[i]["comments_full"])
+        del posts[i]["original_text"]
       except KeyError as ex:
           print("No such key: '%s'" % ex)
       json.dump(posts[i], f, ensure_ascii=False, default=str)

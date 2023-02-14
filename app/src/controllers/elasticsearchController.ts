@@ -14,7 +14,7 @@ const handleSearchPage = async (req: SearchQuery, res: Response) => {
   try {
     const posts = await ElasticsearchService.getPage(req.query);
 
-    return res.render("elasticsearch.ejs", { posts: posts });
+    return res.render("fb.ejs", { posts: posts });
   } catch (e) {
     console.error(e);
   }

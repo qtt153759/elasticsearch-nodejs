@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 from airflow.operators.python_operator import PythonOperator
 from airflow.operators.bash import BashOperator
 import crawler_task.crawler as crawler
-import facebook_scraper
 default_args = {
     'owner': 'qtt',
     'start_date': datetime(2023, 2, 12), 
@@ -41,34 +40,35 @@ dag = DAG(
 #     dag=dag)
 
 
-# test = BashOperator(
-#     task_id='test',
-#     bash_command='sudo chmod 777 /opt/airflow || exit 0',
-#     dag=dag)
-# crawler_bulk = PythonOperator(
-#     task_id="crawler_merge",
-#     python_callable=crawler.create_bulk_data,
-#     dag=dag)
+test = BashOperator(
+    task_id='test',
+    bash_command='sudo chmod 777 /opt/airflow || exit 0',
+    dag=dag)
+crawler_bulk = PythonOperator(
+    task_id="crawler_merge",
+    python_callable=crawler.create_bulk_data,
+    dag=dag)
 
 
-# crawler_url = PythonOperator(
-#     task_id="crawler_url",
-#     python_callable=crawler.crawl_url,
-#     dag=dag)
+crawler_url = PythonOperator(
+    task_id="crawler_url",
+    python_callable=crawler.crawl_url,
+    dag=dag)
 
-# crawler_post = PythonOperator(
-#     task_id="crawler_post",
-#     python_callable=crawler.crawl_post,
-#     dag=dag)
-# crawler_bulk = PythonOperator(
-#     task_id="crawler_merge",
-#     python_callable=crawler.create_bulk_data,
-#     dag=dag)
+crawler_post = PythonOperator(
+    task_id="crawler_post",
+    python_callable=crawler.crawl_post,
+    dag=dag)
+
+
+
+
 index_elasticsearch=PythonOperator(
     task_id="index_elasticsearch",
     python_callable=crawler.indexElasticsearch,
     dag=dag)
-index_elasticsearch
+# test>>crawler_url>>
+crawler_url>>crawler_post>>crawler_bulk>>index_elasticsearch
 
 
 

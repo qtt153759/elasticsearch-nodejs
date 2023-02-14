@@ -16,7 +16,7 @@ version: "3.0"
 services:
   web:
     container_name: web
-    build: .
+    build: ./app
     volumes:
       - ./app:/app/
       - ./crawler/data_facebook:/data_facebook

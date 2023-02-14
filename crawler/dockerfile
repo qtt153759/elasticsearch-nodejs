@@ -1,7 +1,8 @@
 FROM apache/airflow:2.5.1
 # USER ROOT
 USER airflow
-RUN pip install facebook-scraper
+RUN pip install facebook-scraper \
+    && pip install pyvi
 RUN rm -rf /home/airflow/.local/lib/python3.7/site-packages/facebook_scraper
 
 COPY --chown=airflow facebook_scraper /home/airflow/.local/lib/python3.7/site-packages/facebook_scraper

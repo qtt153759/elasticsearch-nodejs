@@ -29,7 +29,9 @@ const getPage = async (search: Query) => {
   // let userList = await userService.getUserList();
   // return res.render("user.ejs", { userList });
   console.log("text", search.text);
+
   let currentDate = new Date().toJSON().slice(0, 10);
+  console.log(currentDate);
   const response = await client.search<Post>({
     index: "facebook",
     body: {
@@ -44,14 +46,14 @@ const getPage = async (search: Query) => {
               script_score: {
                 script: {
                   source:
-                    "_score * params.w1 + doc['reaction_count'].value*params.w2 + decayDateGauss(params.origin, params.scale, params.offset, params.decay, doc['time'].value)*params.w3", //doc['timestamp'].value*params.w3", //  +decayDateGauss(params.origin, params.scale, params.offset, params.decay, doc['timestamp'].value)*params.w3",
+                    "_score * params.w1 + (doc['reaction_count'].value < 100 ? (doc['reaction_count'].value / 100) :1)*params.w2 + decayDateGauss(params.origin, params.scale, params.offset, params.decay, doc['time'].value)*params.w3", //doc['timestamp'].value*params.w3", //  +decayDateGauss(params.origin, params.scale, params.offset, params.decay, doc['timestamp'].value)*params.w3",
                   params: {
-                    w1: 1,
-                    w2: 0.2,
-                    w3: 0.2,
+                    w1: 0.8,
+                    w2: 0.1,
+                    w3: 0.3,
                     origin: currentDate,
-                    scale: "4d",
-                    offset: "3d",
+                    scale: "2d",
+                    offset: "1d",
                     decay: 0.5,
                   },
                 },
